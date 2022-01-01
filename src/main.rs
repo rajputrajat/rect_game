@@ -1,6 +1,14 @@
 use macroquad::prelude::*;
 
-#[macroquad::main("rect_game")]
+fn config() -> Conf {
+    Conf {
+        fullscreen: true,
+        window_resizable: false,
+        ..Default::default()
+    }
+}
+
+#[macroquad::main("config")]
 async fn main() {
     let ferris = load_texture("./lag.png").await.unwrap();
     let mut cam = Camera3D {
