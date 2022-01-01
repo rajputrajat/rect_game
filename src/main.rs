@@ -25,17 +25,17 @@ async fn main() {
 
 fn process_input(mut cam: Camera3D) -> Camera3D {
     if is_key_down(KeyCode::Left) {
-        cam.position.x -= 0.1;
-    } else if is_key_down(KeyCode::Right) {
-        cam.position.x += 0.1;
-    } else if is_key_down(KeyCode::Up) {
-        cam.position.y -= 0.1;
-    } else if is_key_down(KeyCode::Down) {
-        cam.position.y += 0.1;
-    } else if is_key_down(KeyCode::PageUp) {
-        cam.position.z -= 0.1;
-    } else if is_key_down(KeyCode::PageDown) {
         cam.position.z += 0.1;
+    } else if is_key_down(KeyCode::Right) {
+        cam.position.z -= 0.1;
+    } else if is_key_down(KeyCode::Up) {
+        cam.position.y += 0.1;
+    } else if is_key_down(KeyCode::Down) {
+        cam.position.y -= 0.1;
+    } else if is_key_down(KeyCode::PageUp) {
+        cam.position.x -= 0.1;
+    } else if is_key_down(KeyCode::PageDown) {
+        cam.position.x += 0.1;
     }
     cam
 }
