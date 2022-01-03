@@ -21,15 +21,14 @@ async fn main() {
         ..Default::default()
     };
     let mut timers = Timers::new();
-    let fps = Arc::new(Mutex::new(String::new()));
+    let fps = Arc::new(Mutex::new(String::from("calculating fps...")));
     let for_closure = Arc::clone(&fps);
     timers.add(
         2.,
         move || {
             info!("updating fps");
             let mut string = for_closure.lock().unwrap();
-            string.clear();
-            string.push_str(&format!("fps: {}", get_fps()));
+            string.replace_range(.., &format!("fps: {}", get_fps()));
         },
         true,
     );
