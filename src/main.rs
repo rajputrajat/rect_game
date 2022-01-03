@@ -1,5 +1,6 @@
 use log::debug;
 use macroquad::prelude::*;
+use std::sync::Arc;
 
 fn config() -> Conf {
     Conf {
@@ -18,7 +19,8 @@ async fn main() {
         target: vec3(0., 0., 0.),
         ..Default::default()
     };
-    let mut timers = Timers::<FnOnce() + Copy>::new();
+    let mut timers = Timers::new();
+    timers.add(1000., || show_fps(), true);
     let cam2d = Camera2D::default();
     loop {
         clear_background(GRAY);
@@ -59,14 +61,15 @@ fn process_input(mut cam: Camera3D) -> Camera3D {
     cam
 }
 
-struct Timer<F: FnOnce() + Copy> {
+#[derive(Clone)]
+struct Timer {
     total_timeout: f32,
     remaining: f32,
-    callback: F,
+    callback: Arc<dyn Fn()>,
     periodic: bool,
 }
 
-impl<F: FnOnce() + Copy> std::fmt::Debug for Timer<F> {
+impl std::fmt::Debug for Timer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
             "Timer {{ {}, {}, {}}}",
@@ -75,10 +78,10 @@ impl<F: FnOnce() + Copy> std::fmt::Debug for Timer<F> {
     }
 }
 
-struct Timers<F: FnOnce() + Copy>(Vec<Timer<F>>);
+struct Timers(Vec<Timer>);
 
-impl<F: FnOnce() + Copy> Timers<F> {
-    fn new() -> Timers<F> {
+impl Timers {
+    fn new() -> Timers {
         Timers(vec![])
     }
 
@@ -92,7 +95,7 @@ impl<F: FnOnce() + Copy> Timers<F> {
             }
         }
         for i in &timer_done {
-            let item = *self.0.get(*i).unwrap();
+            let mut item = self.0[*i].clone();
             (item.callback)();
             if item.periodic {
                 item.remaining = item.total_timeout;
@@ -103,11 +106,11 @@ impl<F: FnOnce() + Copy> Timers<F> {
         }
     }
 
-    fn add(&mut self, time_out: f32, callback: F, periodic: bool) {
+    fn add<F: Fn() + 'static>(&mut self, time_out: f32, callback: F, periodic: bool) {
         self.0.push(Timer {
             total_timeout: time_out,
             remaining: time_out,
-            callback,
+            callback: Arc::new(callback),
             periodic,
         });
     }
