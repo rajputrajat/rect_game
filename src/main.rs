@@ -1,6 +1,6 @@
 use log::{debug, info};
 use macroquad::prelude::*;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 fn config() -> Conf {
     Conf {
@@ -21,11 +21,15 @@ async fn main() {
         ..Default::default()
     };
     let mut timers = Timers::new();
+    let fps = Arc::new(Mutex::new(String::new()));
+    let for_closure = Arc::clone(&fps);
     timers.add(
-        1.,
-        || {
-            info!("showing fps");
-            draw_text(&get_fps().to_string(), 10., 10., 10., WHITE);
+        2.,
+        move || {
+            info!("updating fps");
+            let mut string = for_closure.lock().unwrap();
+            string.clear();
+            string.push_str(&format!("fps: {}", get_fps()));
         },
         true,
     );
@@ -39,8 +43,9 @@ async fn main() {
             ferris,
             GOLD,
         );
-        set_default_camera();
         timers.update();
+        set_default_camera();
+        draw_text(&fps.lock().unwrap(), 10., 10., 10., WHITE);
         next_frame().await
     }
 }
@@ -68,7 +73,7 @@ fn process_input(mut cam: Camera3D) -> Camera3D {
 struct Timer {
     total_timeout: f32,
     remaining: f32,
-    callback: Arc<dyn Fn()>,
+    callback: Arc<Mutex<dyn FnMut()>>,
     periodic: bool,
 }
 
@@ -99,7 +104,8 @@ impl Timers {
         }
         for i in &timer_done {
             let mut item = self.0[*i].clone();
-            (item.callback)();
+            let cb = Arc::clone(&item.callback);
+            (cb.lock().unwrap())();
             if item.periodic {
                 item.remaining = item.total_timeout;
                 debug!("{:?}", item);
@@ -109,11 +115,11 @@ impl Timers {
         }
     }
 
-    fn add<F: Fn() + 'static>(&mut self, time_out: f32, callback: F, periodic: bool) {
+    fn add<F: FnMut() + 'static>(&mut self, time_out: f32, callback: F, periodic: bool) {
         self.0.push(Timer {
             total_timeout: time_out,
             remaining: time_out,
-            callback: Arc::new(callback),
+            callback: Arc::new(Mutex::new(callback)),
             periodic,
         });
     }
