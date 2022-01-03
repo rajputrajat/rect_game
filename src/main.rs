@@ -1,4 +1,4 @@
-use log::debug;
+use log::{debug, info};
 use macroquad::prelude::*;
 use std::sync::Arc;
 
@@ -12,6 +12,7 @@ fn config() -> Conf {
 
 #[macroquad::main("config")]
 async fn main() {
+    env_logger::init();
     let ferris = load_texture("./lag.png").await.unwrap();
     let mut cam = Camera3D {
         position: vec3((screen_width() / 2.) + 50., screen_height() / 2., 0.),
@@ -20,8 +21,14 @@ async fn main() {
         ..Default::default()
     };
     let mut timers = Timers::new();
-    timers.add(1000., || show_fps(), true);
-    let cam2d = Camera2D::default();
+    timers.add(
+        1.,
+        || {
+            info!("showing fps");
+            draw_text(&get_fps().to_string(), 10., 10., 10., WHITE);
+        },
+        true,
+    );
     loop {
         clear_background(GRAY);
         cam = process_input(cam);
@@ -32,14 +39,10 @@ async fn main() {
             ferris,
             GOLD,
         );
-        //set_camera(&cam2d);
         set_default_camera();
+        timers.update();
         next_frame().await
     }
-}
-
-fn show_fps() {
-    draw_text(&get_fps().to_string(), 10., 10., 10., WHITE);
 }
 
 fn process_input(mut cam: Camera3D) -> Camera3D {
